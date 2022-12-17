@@ -1,0 +1,16 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+BostonBikes::extract_zip()
+```
+
+```{r}
+preview_df <- read.csv("data/202211-bluebikes-tripdata.csv")
+head(preview_df)
+
+```
+
