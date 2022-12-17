@@ -5,12 +5,47 @@ output: html_notebook
 
 
 ```{r}
+library(sp)
+library(rgdal)
+library(tidyverse)
+library(sf)
+library(tidyverse)
 BostonBikes::extract_zip()
+my_trip_data <- BostonBikes::enrich_geospatial()
 ```
 
+
 ```{r}
-preview_df <- read.csv("data/202211-bluebikes-tripdata.csv")
-head(preview_df)
+
+stations <- read.csv("https://s3.amazonaws.com/hubway-data/current_bluebikes_stations.csv", header = TRUE, skip = 1)
+stations
+```
+
+
+
+```{r}
+library(sp)
+library(rgdal)
+library(tidyverse)
+library(sf)
+library(tidyverse)
+stations <- read.csv("https://s3.amazonaws.com/hubway-data/current_bluebikes_stations.csv", header = TRUE, skip = 1)
+trip_data <- read.csv(Sys.getenv("in_path"))
+neighbourhoods <- rgdal::readOGR("data/Boston_Neighborhoods.geojson")
+stations_enriched <- sf::st_as_sf(stations,
+                                        coords=c('Longitude', 'Latitude'), crs=sf::st_crs(neighbourhoods))
+
+neighbourhood_geospatial <- neighbourhoods %>%
+  sf::st_as_sf() %>%
+  sf::st_join(stations_enriched, join=st_intersects)
+
+trip_data_enriched <- trip_data %>%
+  dplyr::mutate(start.station.id = as.integer(start.station.id), end.station.id = as.integer(end.station.id))%>%
+  dplyr::left_join(neighbourhood_geospatial, by = c('start.station.name' = 'Name.y'))%>%
+  dplyr::rename(start_neighbourhood = Name.x)%>%
+  dplyr::left_join(neighbourhood_geospatial, by = c('end.station.name' = 'Name.y'))%>%
+  dplyr::rename(end_neighbourhood = Name.x)
+
 
 ```
 
