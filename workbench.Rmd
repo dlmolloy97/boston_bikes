@@ -13,3 +13,9 @@ library(tidyverse)
 BostonBikes::extract_zip()
 my_trip_data <- BostonBikes::enrich_geospatial()
 ```
+
+```{r}
+head(my_trip_data)
+summary_duration <- sqldf::sqldf("SELECT start_neighbourhood, end_neighbourhood, AVG(tripduration) as avg_trip_duration from my_trip_data where start_neighbourhood is not null group by 1,2")
+summary_duration
+```
