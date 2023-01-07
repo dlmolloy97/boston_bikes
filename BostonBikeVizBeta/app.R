@@ -46,7 +46,7 @@ shinyApp(
           plotOutput("view_outbound")))
     })
 
-    november_enriched <- read.csv("../data/november_enriched.csv")
+
     df_inbound <- reactive({sqldf::read.csv.sql("../data/november_enriched.csv",
       glue::glue("SELECT start_neighbourhood,
   COUNT(*) as journeys
