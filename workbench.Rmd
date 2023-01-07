@@ -12,10 +12,103 @@ library(sf)
 library(tidyverse)
 BostonBikes::extract_zip()
 my_trip_data <- BostonBikes::enrich_geospatial()
+head(my_trip_data)
+write.csv(my_trip_data, "data/november_enriched.csv")
+```
+
+```{r}
+neighbourhood_clean <- my_trip_data%>%
+  mutate(neighbourhood = gsub('"', '', neighbourhood))
+write.csv(my_trip_data, "data/november_enriched.csv")
 ```
 
 ```{r}
 head(my_trip_data)
-summary_duration <- sqldf::sqldf("SELECT start_neighbourhood, end_neighbourhood, AVG(tripduration) as avg_trip_duration from my_trip_data where start_neighbourhood is not null group by 1,2")
-summary_duration
+
 ```
+
+```{r}
+library(tidyverse)
+neighbourhood_array = sqldf::read.csv.sql("data/november_enriched.csv", "SELECT DISTINCT start_neighbourhood as neighbourhood FROM file")
+head(neighbourhood_array)
+```
+
+
+```{r}
+df <- sqldf::read.csv.sql("data/november_enriched.csv","SELECT start_neighbourhood,
+  COUNT(*) as journeys
+  FROM file
+  WHERE start_neighbourhood is not null
+```
+
+
+```{r}
+GROUP BY 1")%>%
+  mutate(start_neighbourhood = gsub('"', '', start_neighbourhood))
+head(df)
+```
+
+```{r}
+ggplot(df, aes(x=journeys, y=start_neighbourhood)) + geom_bar(stat='identity')
+```
+```{r}
+#MVE for shiny
+library(tidyverse)
+library(ggplot2)
+library(shiny)
+neighbourhood_quoted <- sqldf::read.csv.sql("../data/november_enriched.csv", "SELECT DISTINCT start_neighbourhood as neighbourhood FROM file")
+neighbourhood_array <- neighbourhood_quoted%>%
+  mutate(neighbourhood = gsub('"', '', neighbourhood))
+neighbourhood_array <- as.list(neighbourhood_array)
+
+
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+    # Application title
+    titlePanel("Old Faithful Geyser Data"),
+
+    # Sidebar with a slider input for number of bins
+    sidebarLayout(
+        sidebarPanel(
+          selectInput("neighbourhood",
+                      "Neighbourhood:",
+                      neighbourhood_array,
+                      selected = "Roxbury"
+                      ),
+          selectInput("direction",
+                      "Direction:",
+                      c("Outbound" = "start_neighbourhood",
+                        "Inbound" = "end_neighbourhood"),
+                      selected = "Inbound")
+          ),
+
+
+        # Show a plot of the generated distribution
+        mainPanel(
+           plotOutput("view"),
+           textOutput("demo"))))
+
+# Define server logic required to draw a histogram
+server <- function(input, output) {
+  november_enriched <- read.csv("../data/november_enriched.csv")
+
+  dataframe <- reactive({sqldf::sqldf(
+  glue::glue("SELECT start_neighbourhood,
+  COUNT(*) as journeys
+  FROM november_enriched
+  WHERE end_neighbourhood = '{input$neighbourhood}'
+  GROUP BY 1"))
+  })
+
+  output$view <- renderPlot({
+    p <- ggplot(dataframe(), aes(x=journeys, y=start_neighbourhood)) + geom_bar(stat='identity')
+    print(p)
+  })
+}
+
+
+# Run the application
+shinyApp(ui = ui, server = server)
+
+```
+
