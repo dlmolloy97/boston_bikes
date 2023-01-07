@@ -48,7 +48,7 @@ shinyApp(
 
     november_enriched <- read.csv("../data/november_enriched.csv")
     df_inbound <- reactive({sqldf::read.csv.sql("../data/november_enriched.csv",
-                                                glue::glue("SELECT start_neighbourhood,
+      glue::glue("SELECT start_neighbourhood,
   COUNT(*) as journeys
   FROM file
   WHERE end_neighbourhood = '\"{input$neighbourhood}\"'
@@ -56,19 +56,19 @@ shinyApp(
     })
 
     output$view_inbound <- renderPlot({
-      p <- ggplot(df_inbound(), aes(x=journeys, y=reorder(start_neighbourhood, -journeys))) + geom_bar(stat='identity')
+      p <- ggplot(df_inbound(), aes(x=journeys, y=start_neighbourhood)) + geom_bar(stat='identity')
       print(p)
     })
 
-    df_outbound <- reactive({sqldf::read.csv.sql("../data/november_enriched.csv",
-                                                glue::glue("SELECT end_neighbourhood,
+    df_inbound <- reactive({sqldf::read.csv.sql("../data/november_enriched.csv",
+    glue::glue("SELECT end_neighbourhood,
     COUNT(*) as journeys
     FROM file
-    WHERE start_neighbourhood = '\"{input$neighbourhood}\"'GROUP BY 1"))%>%mutate(end_neighbourhood = gsub('"', '', end_neighbourhood))
+    WHERE start_neighbourhood = '\"{input$neighbourhood}\"'GROUP BY 1"))%>%mutate(end_neighbourhood = gsub('"', '', start_neighbourhood))
     })
 
     output$view_outbound <- renderPlot({
-      p <- ggplot(df_outbound(), aes(x=journeys, y=reorder(end_neighbourhood, -journeys))) + geom_bar(stat='identity')
+      p <- ggplot(df_outbound(), aes(x=journeys, y=end_neighbourhood)) + geom_bar(stat='identity')
       print(p)
     })
   })
