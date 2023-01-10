@@ -112,3 +112,40 @@ shinyApp(ui = ui, server = server)
 
 ```
 
+```{r}
+nycounties <- rgdal::readOGR("https://rstudio.github.io/leaflet/json/nycounties.geojson") 
+pal <- colorNumeric("viridis", NULL)
+
+leaflet(nycounties) %>%
+  addTiles() %>%
+  addPolygons(stroke = FALSE, smoothFactor = 0.3, fillOpacity = 1,
+    fillColor = ~pal(log10(pop)),
+    label = ~paste0(county, ": ", formatC(pop, big.mark = ","))) %>%
+  addLegend(pal = pal, values = ~log10(pop), opacity = 1.0,
+    labFormat = labelFormat(transform = function(x) round(10^x)))
+```
+
+```{r}
+boston_districts <- rgdal::readOGR("data/Boston_Neighborhoods.geojson") 
+journeys <- sqldf::read.csv.sql("data/november_enriched.csv", "SELECT start_neighbourhood, COUNT(*) as journeys from file group by 1")%>%
+  mutate(start_neighbourhood = gsub('"', '', start_neighbourhood))
+
+boston_districts@data <- boston_districts@data %>%
+  dplyr::left_join(journeys, by = c("Name" = "start_neighbourhood"))
+
+pal <- colorNumeric("viridis", NULL)
+
+
+leaflet(boston_districts) %>%
+  addTiles()%>%
+  addPolygons(stroke = FALSE, smoothFactor = 0.3, fillOpacity = 0.6,
+    fillColor = ~pal(boston_districts@data$journeys))%>%
+  addLegend(pal = pal, values = boston_districts@data$journeys, opacity = 1.0)
+```
+
+
+```{r}
+sqldf::read.csv.sql("data/november_enriched.csv", "SELECT * from file limit 10")%>%
+  mutate(start_neighbourhood = gsub('"', '', start_neighbourhood))
+```
+

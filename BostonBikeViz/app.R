@@ -1,6 +1,8 @@
 library(tidyverse)
 library(ggplot2)
 library(shiny)
+library(leaflet)
+
 neighbourhood_quoted <- sqldf::read.csv.sql("../data/november_enriched.csv", "SELECT DISTINCT start_neighbourhood as neighbourhood FROM file")
 neighbourhood_array <- neighbourhood_quoted%>%
   mutate(neighbourhood = gsub('"', '', neighbourhood))
@@ -21,13 +23,20 @@ shinyApp(
                       "Neighbourhood:",
                       neighbourhood_array,
                       selected = "Roxbury"
+          ),
+          selectInput("statistic_inbound",
+                      "Travel statistic:",
+                      c("Travel time" = "time",
+                        "Total journeys" = "journeys"),
+                      selected = "Travel time"
           )
         ),
 
 
         # Show a plot of the generated distribution
         mainPanel(
-          plotOutput("view_inbound")))
+          plotOutput("view_inbound"),
+          leafletOutput("leaflet_inbound")))
     })
 
     output$outbound <- renderUI({
@@ -37,13 +46,20 @@ shinyApp(
                       "Neighbourhood:",
                       neighbourhood_array,
                       selected = "Roxbury"
+          ),
+          selectInput("statistic_outbound",
+                      "Travel statistic:",
+                      c("Travel time" = "time",
+                        "Total journeys" = "journeys"),
+                      selected = "Travel time"
           )
         ),
 
 
         # Show a plot of the generated distribution
         mainPanel(
-          plotOutput("view_outbound")))
+          plotOutput("view_outbound"),
+          leafletOutput("leaflet_outbound")))
     })
 
     november_enriched <- read.csv("../data/november_enriched.csv")
@@ -60,8 +76,13 @@ shinyApp(
       print(p)
     })
 
+    leaflet_outbound <- reactive({BostonBikes::leaflet_maker(input$statistic_outbound, 'outbound', geojson_path = "../data/Boston_Neighborhoods.geojson")})
+
+    leaflet_inbound <- reactive({BostonBikes::leaflet_maker(input$statistic_inbound, 'inbound', geojson_path = "../data/Boston_Neighborhoods.geojson")})
+
+
     df_outbound <- reactive({sqldf::read.csv.sql("../data/november_enriched.csv",
-                                                glue::glue("SELECT end_neighbourhood,
+                                                 glue::glue("SELECT end_neighbourhood,
     COUNT(*) as journeys
     FROM file
     WHERE start_neighbourhood = '\"{input$neighbourhood}\"'GROUP BY 1"))%>%mutate(end_neighbourhood = gsub('"', '', end_neighbourhood))
@@ -71,5 +92,8 @@ shinyApp(
       p <- ggplot(df_outbound(), aes(x=journeys, y=reorder(end_neighbourhood, -journeys))) + geom_bar(stat='identity')
       print(p)
     })
+
+    output$leaflet_inbound <- renderLeaflet({leaflet_inbound()})
+    output$leaflet_outbound <- renderLeaflet({leaflet_outbound()})
   })
 )
