@@ -148,4 +148,20 @@ leaflet(boston_districts) %>%
 sqldf::read.csv.sql("data/november_enriched.csv", "SELECT * from file limit 10")%>%
   mutate(start_neighbourhood = gsub('"', '', start_neighbourhood))
 ```
+```{r}
+
+
+db < Sys.getenv("postgresql_db")
+host_db <- 'localhost' #i.e. # i.e. 'ec2-54-83-201-96.compute-1.amazonaws.com'  
+
+db_port <- Sys.getenv("postgresql_port")
+
+db_user <- Sys.getenv("postgresql_user")
+
+db_password <- Sys.getenv("postgresql_password")
+
+con <- DBI::dbConnect(RPostgres::Postgres(), dbname = Sys.getenv("postgresql_db"), host='localhost', port=Sys.getenv("postgresql_port"), user=Sys.getenv("postgresql_user"), password=Sys.getenv("postgresql_password"))  
+
+DBI::dbGetQuery(con, "SELECT * FROM stations") 
+```
 
